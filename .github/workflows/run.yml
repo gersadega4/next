@@ -35,7 +35,7 @@ jobs:
       - name: ▶️ Run worker ${{ matrix.worker }}
         run: |
           echo "Worker ${{ matrix.worker }} started"
-          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" node index2.js
+          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" node index.js
 
   trigger-next:
     needs: run
