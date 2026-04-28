@@ -12,30 +12,30 @@ jobs:
       matrix:
         worker: [1, 2, 3, 4, 5]
 
-    timeout-minutes: 10
+    timeout-minutes: 7
 
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 🐍 Setup Python
-        uses: actions/setup-python@v5
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: '3.11'
+          node-version: '20'
 
-      - name: 📦 Install deps
+      - name: 📦 Install dependencies
         run: |
-          pip install selenium webdriver-manager
+          npm init -y
+          npm install playwright playwright-extra puppeteer-extra-plugin-stealth dotenv
 
-      - name: 🌐 Install Chrome
+      - name: 🌐 Install Playwright browsers
         run: |
-          sudo apt update
-          sudo apt install -y google-chrome-stable
+          npx playwright install --with-deps
 
       - name: ▶️ Run worker ${{ matrix.worker }}
         run: |
           echo "Worker ${{ matrix.worker }} started"
-          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" python main.py
+          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" node index2.js
 
   trigger-next:
     needs: run
