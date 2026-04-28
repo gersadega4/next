@@ -503,8 +503,32 @@ async function humanType(locator, text) {
         const firstCell = notebookLocator.locator('.CodeMirror').first();
         await firstCell.waitFor({ state: 'visible', timeout: 30000 });
 
+        // SOLUSI BUG: Cek dan tutup Pop-up (Modal) Jupyter yang menghalangi layar
+        console.log("-> Memeriksa pop-up Jupyter yang berpotensi menghalangi layar...");
+        try {
+            const modalDialog = notebookLocator.locator('.modal.fade.in, .modal-dialog').first();
+            if (await modalDialog.isVisible({ timeout: 3000 })) {
+                console.log("  ⚠ Pop-up Jupyter terdeteksi! Mencoba menutupnya...");
+                
+                // Cara 1: Tekan tombol Escape di keyboard
+                await page3.keyboard.press('Escape');
+                await delay(1000);
+                
+                // Cara 2: Jika masih membandel, klik tombol apapun di modal-footer (OK/Close)
+                const modalBtn = notebookLocator.locator('.modal-footer button').last();
+                if (await modalBtn.isVisible({ timeout: 2000 })) {
+                    await modalBtn.click({ force: true });
+                }
+                await delay(1500);
+                console.log("  ✔ Layar telah dibersihkan dari pop-up.");
+            }
+        } catch (err) {
+            // Abaikan jika tidak ada pop-up
+        }
+
         console.log("-> Memilih cell pertama...");
-        await firstCell.click();
+        // Tambahkan { force: true } sebagai proteksi ganda agar klik mengabaikan layer transparan
+        await firstCell.click({ force: true });
         await delay(1000);
 
         console.log("-> Menghapus isi cell bawaan (%pylab inline)...");
@@ -531,20 +555,18 @@ async function humanType(locator, text) {
     } catch (error) {
         console.error("\n✘ Terjadi kesalahan eksekusi:", error.message);
     } finally {
-        // Tutup browser terlebih dahulu agar file di dalam folder tidak terkunci (locked) oleh sistem
         await context.close().catch(() => {});
-        await delay(1000); // Beri jeda 1 detik agar sistem operasi melepas kunci file
+        await delay(1000); // Beri jeda 1 detik agar OS melepas lock folder
         
-        // Eksekusi penghapusan folder profile
         try {
+            const fs = require('fs');
             if (fs.existsSync(profileDir)) {
                 fs.rmSync(profileDir, { recursive: true, force: true });
                 console.log("🧹 Clean up: Folder temp_profile berhasil dihapus dari penyimpanan.");
             }
         } catch (cleanupErr) {
-            console.log(`⚠ Gagal menghapus folder profile secara otomatis: ${cleanupErr.message}`);
+            console.log(`⚠ Gagal menghapus folder profile: ${cleanupErr.message}`);
         }
-        
         console.log("✅ Selesai. Seluruh proses automasi dan pembersihan telah dieksekusi.");
     }
 })();
